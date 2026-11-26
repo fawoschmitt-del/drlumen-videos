@@ -5,10 +5,10 @@ import numpy as np, os, re, json, difflib, soundfile as sf
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODELS = os.environ.get('KOKORO_DIR', os.path.join(HERE, 'models'))
 VOICE = os.environ.get('LUMEN_VOICE', 'am_michael')
-SPEED = float(os.environ.get('LUMEN_SPEED', '1.08'))
+SPEED = float(os.environ.get('LUMEN_SPEED', '1.17'))
 SR = 24000
-GAP = 0.22          # pause between beats
-LEAD = 0.35         # silence at the very start
+GAP = 0.05          # pause between beats (keep it tight!)
+LEAD = 0.0          # no silence at the start: the hook starts on frame 1
 
 def _trim(s, thr=0.01):
     a = np.abs(s); idx = np.nonzero(a > thr)[0]
@@ -42,16 +42,19 @@ def _align(words, wtimes, dur):
     return [(w, float(s), float(max(e, s + 0.08))) for w, s, e in zip(words, st, en)]
 
 def build(beats, outdir, cache_json=None):
+    key = repr((VOICE, SPEED, GAP, LEAD, [tuple(b[:3]) for b in beats]))
     if cache_json and os.path.exists(cache_json):
-        return json.load(open(cache_json))
+        old = json.load(open(cache_json))
+        if old.get('key') == key: return old
     from kokoro_onnx import Kokoro
     from faster_whisper import WhisperModel
     k = Kokoro(os.path.join(MODELS, 'kokoro-v1.0.onnx'), os.path.join(MODELS, 'voices-v1.0.bin'))
     wm = WhisperModel('base.en', device='cpu', compute_type='int8')
     track = [np.zeros(int(SR * LEAD), np.float32)]; t = LEAD; out = []
-    for vis, pose, text in beats:
-        s, sr = k.create(text, voice=VOICE, speed=SPEED, lang='en-us')
-        s = _trim(s.astype(np.float32)); dur = len(s) / SR
+    for bt in beats:
+        vis, pose, text = bt[:3]
+        s, sr = k.create(text.replace('*', ''), voice=VOICE, speed=SPEED, lang='en-us')
+        s = _trim(s.astype(np.float32), 0.006); dur = len(s) / SR
         a16 = np.interp(np.arange(0, len(s), SR / 16000), np.arange(len(s)), s).astype(np.float32)
         segs, _ = wm.transcribe(a16, word_timestamps=True, language='en', beam_size=1)
         wt = [dict(word=w.word, start=w.start, end=w.end) for sg in segs for w in sg.words]
@@ -60,11 +63,11 @@ def build(beats, outdir, cache_json=None):
         out.append(dict(vis=vis, pose=pose, text=text, start=t, end=t + dur,
                         words=[(w, t + a, t + b) for w, a, b in al]))
         track.append(s); track.append(np.zeros(int(SR * GAP), np.float32)); t += dur + GAP
-    track.append(np.zeros(int(SR * 1.2), np.float32))
+    track.append(np.zeros(int(SR * 0.9), np.float32))
     full = np.concatenate(track)
     full = full / (np.abs(full).max() + 1e-9) * 0.95
     sf.write(os.path.join(outdir, 'voice.wav'), full, SR)
-    res = dict(beats=out, total=len(full) / SR)
+    res = dict(beats=out, total=len(full) / SR, key=key)
     if cache_json: json.dump(res, open(cache_json, 'w'), indent=1)
     return res
 

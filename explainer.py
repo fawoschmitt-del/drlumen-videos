@@ -3,7 +3,7 @@
     python explainer.py <episode> preview    contact sheet -> out/<episode>/preview.png
 An episode is a file episodes/<episode>.py with TITLE, CAPTION and BEATS = [(visual, arms, text), ...].
 Visuals that aren't drawn by a special function fall back to a big keyword card (see card_text)."""
-import numpy as np, os, sys, math, random, subprocess, importlib, wave, glob
+import numpy as np, os, sys, math, random, subprocess, importlib, wave, glob, re
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import lumen3d as L3
 import voice as VO
@@ -287,12 +287,23 @@ def v_robot(lt, b):
     return im
 def v_delay(lt, b):
     im, d = new_card()
-    late = b['vis'] == 'delay2' or lt > 2.4
-    frac = 0.0 if not late else 1.0
-    label(d, (CW / 2 - 5, 80), 'DELAY', 90, INK, FA)
-    stopwatch(d, 230, 360, 150, 0.2 * min(1, max(0, (lt - 2.0) / 0.6)) / 0.2 * 0.55 if b['vis'] == 'delay' else 0.55)
-    label(d, (230, 590), '0.2 s' if late else '0 s', 80, INK, FA)
-    meter(d, 450, 360, 420, 90, (0.12 + 0.75 * ease_out((lt - 2.4) / 0.8)) if b['vis'] == 'delay' and late else (0.12 if not late else 0.87), PINK, 'TICKLISH')
+    on = b['vis'] == 'delay2'
+    k = ease_out(lt / 0.7) if on else 0.0
+    label(d, (CW / 2 - 5, 80), 'ADD A DELAY' if not on else 'IT TICKLES!', 90, INK if not on else PINK, FA)
+    stopwatch(d, 230, 360, 150, 0.55 * k)
+    label(d, (230, 590), f'{0.2 * k:.1f} s', 80, INK, FA)
+    meter(d, 450, 360, 420, 90, 0.08 + 0.82 * k, PINK, 'TICKLISH')
+    return im
+def v_spoiler(lt, b):
+    im, d = new_card()
+    brain(d, 470, 380, 1.0)
+    k = ease_back(min(1, max(0, lt - 0.25) / 0.3))
+    if k > 0:
+        st = Image.new('RGBA', (720, 170), (0, 0, 0, 0)); sd = ImageDraw.Draw(st)
+        sd.rounded_rectangle([6, 6, 714, 164], 24, outline=(230, 40, 60), width=14)
+        sd.text((360, 88), 'SPOILER ALERT', font=font(FA, 110), fill=(230, 40, 60), anchor='mm')
+        st = st.rotate(-12, Image.BICUBIC, expand=True)
+        paste_c(im, st, 470, 300, 1.0 + 0.6 * (1 - k))
     return im
 def v_rats(lt, b):
     im, d = new_card()
@@ -338,7 +349,7 @@ def card_text(lt, b):            # fallback: keyword card from the beat text
 
 VISUALS = {'hook': v_hook, 'hook2': v_hook2, 'intro': v_intro, 'title': v_title, 'copy': v_copy, 'predict': v_predict,
            'volume': v_volume, 'scan': v_scan, 'scan2': v_scan, 'surprise': v_surprise, 'robot': v_robot, 'robot2': v_robot,
-           'delay': v_delay, 'delay2': v_delay, 'rats': v_rats, 'rats2': v_rats, 'rats3': v_rats, 'outro': v_outro, 'follow': v_follow}
+           'delay': v_delay, 'delay2': v_delay, 'rats': v_rats, 'rats2': v_rats, 'rats3': v_rats, 'outro': v_outro, 'follow': v_follow, 'spoiler': v_spoiler}
 STATIC = set()      # visuals that don't animate could be cached; all are cheap enough
 
 # ------------------------------------------------------------------ captions (word by word)
@@ -346,31 +357,32 @@ def chunks(words, maxw=3):
     out, cur = [], []
     for w in words:
         cur.append(w)
-        if len(cur) >= maxw or w[0][-1] in '.,!?':
+        if len(cur) >= maxw or w[0].rstrip('*')[-1:] in '.,!?':
             out.append(cur); cur = []
     if cur: out.append(cur)
     return out
 
-CAP_F = None
+def is_emph(w): return '*' in w
+def clean(w): return w.replace('*', '')
+
 def draw_caption(img, chunk, t, cy=930):
-    f = font(FA, 112)
-    toks = [(w.upper().strip(), a, e) for w, a, e in chunk]
-    gap = 28
+    toks = [(clean(w).upper().strip(), a, e, is_emph(w)) for w, a, e in chunk]
+    gap = 26
     ims = []
-    cur = max([i for i, (_, a, _) in enumerate(toks) if a <= t] or [-1])
-    for i, (w, a, e) in enumerate(toks):
+    cur = max([i for i, (_, a, _, _) in enumerate(toks) if a <= t] or [-1])
+    for i, (w, a, e, em) in enumerate(toks):
         active = i == cur
         done = t >= a - 0.03
-        col = YEL if active else (255, 255, 255)
-        im = text_img(w, f, col, 11)
-        sc = 1.0 + (0.12 * (1 - min(1, (t - a) / 0.12)) if active else 0)
-        ims.append((im, sc, done))
-    total = sum(im.width for im, _, _ in ims) + gap * (len(ims) - 1)
-    scale = min(1.0, 1000 / total)
+        col = PINK if em else (YEL if active else (255, 255, 255))
+        im = text_img(w, font(FA, 128 if em else 112), col, 12)
+        pop = (0.35 if em else 0.16) * max(0, 1 - (t - a) / 0.14) if active else 0
+        ims.append((im, 1.0 + pop, done, em and active))
+    total = sum(im.width for im, _, _, _ in ims) + gap * (len(ims) - 1)
+    scale = min(1.0, 1010 / total)
     x = W / 2 - total * scale / 2
-    for im, sc, done in ims:
+    for im, sc, done, wob in ims:
         wpx = im.width * scale
-        paste_c(img, im, x + wpx / 2, cy, scale * sc, alpha=1.0 if done else 0.0)
+        paste_c(img, im, x + wpx / 2, cy, scale * sc, angle=(-4 if wob else 0), alpha=1.0 if done else 0.0)
         x += wpx + gap * scale
 
 # ------------------------------------------------------------------ host
@@ -380,7 +392,7 @@ def spr(name):
     return _SPR[name]
 GLOW = radial((820, 820), (255, 220, 110), 255, 1.5)
 
-def host(img, t, beat, env_v, bt):
+def host(img, t, beat, env_v, bt, punch=0.0):
     arms = beat['pose'] if beat else 'down'
     speaking = beat is not None and beat['start'] <= t <= beat['end']
     m = 'smile'
@@ -390,97 +402,182 @@ def host(img, t, beat, env_v, bt):
     name = f'lumen_{arms}_blink' if blink else f'lumen_{arms}_{m}'
     sp = spr(name)
     sc = 0.70
-    bob = 10 * math.sin(t * 2 * math.pi * 0.9)
-    pop = 1 + 0.06 * math.exp(-bt * 9) * math.cos(bt * 25) if bt < 0.6 else 1      # squash on pose change
+    bob = 12 * math.sin(t * 2 * math.pi * 1.1)
+    pop = 1 + 0.09 * math.exp(-bt * 9) * math.cos(bt * 25) if bt < 0.6 else 1      # squash on pose change
+    pop += 0.05 * punch
     cx, feet = W / 2, 1700
-    ga = min(1, 0.55 + 0.6 * env_v + (0.25 if arms == 'up' else 0))
-    gs = 1.0 + 0.08 * env_v
+    ga = min(1, 0.55 + 0.6 * env_v + (0.25 if arms == 'up' else 0) + 0.6 * punch)
+    gs = 1.0 + 0.08 * env_v + 0.25 * punch
     g = GLOW.resize((int(820 * gs), int(820 * gs)))
-    g.putalpha(g.getchannel('A').point(lambda v: int(v * ga * 0.8)))
+    g.putalpha(g.getchannel('A').point(lambda v: int(min(255, v * ga * 0.85))))
     img.paste(g, (int(cx - g.width / 2), int(feet - sp.height * sc * 0.72 - g.height / 2 + bob)), g)
     w, h = int(sp.width * sc * pop), int(sp.height * sc / pop)
     s2 = sp.resize((w, h), Image.BICUBIC)
-    # floor shadow
     sh = radial((420, 70), (0, 0, 0), 120, 1.0)
     img.paste(sh, (int(cx - 210), int(feet - 40)), sh)
     img.paste(s2, (int(cx - w / 2), int(feet - h + bob - 30)), s2)
 
+# ------------------------------------------------------------------ hook: giant stamped text instead of a card
+# a beat whose visual is 'BIG:LINE ONE|LINE TWO|LINE THREE' stamps the lines in, one after another
+BIG_COLS = [(255, 255, 255), YEL, PINK, CYAN]
+def big_lines(beat): return beat['vis'][4:].split('|')
+def big_times(beat):
+    """each line lands on the word in the voice that matches its first word, else evenly spaced"""
+    lines = big_lines(beat); ws = beat['words']; out = []
+    for i, ln in enumerate(lines):
+        first = re.sub(r'[^a-z0-9]', '', ln.split()[0].lower()) if ln.split() else ''
+        hit = [a for w, a, e in ws if re.sub(r'[^a-z0-9]', '', clean(w).lower()) == first and a >= (out[-1] if out else -1)]
+        out.append(hit[0] if hit else beat['start'] + i * 0.35)
+    return out
+def draw_big(img, beat, t):
+    lines = big_lines(beat); times = big_times(beat)
+    n = len(lines); size = 230 if n <= 3 else 170
+    y0 = 560 - (n - 1) * size * 0.55
+    for i, (ln, t0) in enumerate(zip(lines, times)):
+        if t < t0: continue
+        k = t - t0
+        sc = 1.0 + 0.9 * math.exp(-k * 14)
+        im = text_img(ln, font(FA, size), BIG_COLS[i % len(BIG_COLS)], 16)
+        sc *= min(1.0, 1000 / im.width)
+        paste_c(img, im, W / 2, y0 + i * size * 1.1, sc, angle=(-3 if i % 2 else 3) * math.exp(-k * 6))
+
+# ------------------------------------------------------------------ camera
+def cam(img, z=1.0, dx=0.0, dy=0.0, cy=1000):
+    if abs(z - 1) < 1e-3 and abs(dx) < 0.5 and abs(dy) < 0.5: return img
+    w, h = W / z, H / z
+    x0 = W / 2 - w / 2 - dx / z; y0 = cy - (cy - 0) / z - dy / z
+    x0 = min(max(x0, 0), W - w); y0 = min(max(y0, 0), H - h)
+    return img.resize((W, H), Image.BILINEAR, box=(x0, y0, x0 + w, y0 + h))
+
+def emph_times(T):
+    return [a for b in T['beats'] for w, a, e in b['words'] if is_emph(w)] + \
+           [ti for b in T['beats'] if b['vis'].startswith('BIG:') for ti in big_times(b)]
+
 # ------------------------------------------------------------------ frame
+ENTER = ['pop', 'left', 'right', 'drop']
 def frame(T, t, env):
     img = background().copy()
     particles(img, t)
     beats = T['beats']
     bi = 0
     for i, b in enumerate(beats):
-        if t >= b['start'] - 0.12: bi = i
+        if t >= b['start'] - 0.1: bi = i
     beat = beats[bi]
     lt = t - beat['start']
     ev = float(env[min(len(env) - 1, int(t * FPS))]) if len(env) else 0
-    host(img, t, beat, ev, lt + 0.12)
-    # card
-    fn = VISUALS.get(beat['vis'], card_text)
-    same_as_prev = bi > 0 and VISUALS.get(beats[bi - 1]['vis']) is fn and fn is not card_text and beats[bi - 1]['vis'].rstrip('23') == beat['vis'].rstrip('23')
-    k = 1.0 if same_as_prev else ease_back((lt + 0.12) / 0.32)
-    card = fn(max(0, lt), beat)
-    paste_c(img, card, W / 2, 175 + CH / 2, 0.6 + 0.4 * k, angle=(1 - min(1, k)) * -6, alpha=min(1, (lt + 0.12) / 0.12) if not same_as_prev else 1)
-    # caption
-    words = beat['words']
-    ch = None
-    for c in chunks(words):
-        if t >= c[0][1] - 0.02: ch = c
-    if ch and t <= beat['end'] + 0.25:
-        draw_caption(img, ch, t)
+    if 'EMPH' not in T: T['EMPH'] = emph_times(T)
+    punch = sum(math.exp(-(t - te) * 7) for te in T['EMPH'] if 0 <= t - te < 0.8)
+    punch = min(1.0, punch)
+    host(img, t, beat, ev, lt + 0.1, punch)
+    big = beat['vis'].startswith('BIG:')
+    if big:
+        draw_big(img, beat, t)
+    else:
+        fn = VISUALS.get(beat['vis'], card_text)
+        prev = beats[bi - 1]['vis'] if bi > 0 else ''
+        same_as_prev = bi > 0 and VISUALS.get(prev) is fn and fn is not card_text and prev.rstrip('23') == beat['vis'].rstrip('23')
+        k = 1.0 if same_as_prev else ease_back((lt + 0.1) / 0.28)
+        j = bi                                   # a card shown over several beats keeps animating from its first beat
+        while j > 0 and beats[j - 1]['vis'] == beat['vis']: j -= 1
+        card = fn(max(0, t - beats[j]['start']), beat)
+        mode = ENTER[bi % len(ENTER)]
+        cx, cyc, sc, ang = W / 2, 175 + CH / 2, 1.0, 0
+        if mode == 'pop': sc = 0.5 + 0.5 * k; ang = (1 - min(1, k)) * -8
+        elif mode == 'left': cx -= 1150 * (1 - k); ang = (1 - k) * 10
+        elif mode == 'right': cx += 1150 * (1 - k); ang = -(1 - k) * 10
+        else: cyc -= 1000 * (1 - k)
+        paste_c(img, card, cx, cyc, sc, angle=ang)
+    # camera: jump-cut framing per beat + slow push + punch-in & shake on emphasised words
+    rnd = random.Random(int(t * 1000))
+    z = (1.0 if bi % 2 == 0 else 1.06) + 0.012 * max(0, lt) + 0.09 * punch
+    sh = 16 * punch
+    img = cam(img, z, rnd.uniform(-sh, sh), rnd.uniform(-sh, sh), cy=1000)
+    if punch > 0.6:                                   # tiny white flash on the hit
+        img = Image.blend(img, Image.new('RGB', (W, H), (255, 255, 255)), 0.12 * (punch - 0.6) / 0.4)
+    # caption (not zoomed, always readable)
+    if not big or bi > 0:
+        ch = None
+        for c in chunks(beat['words']):
+            if t >= c[0][1] - 0.02: ch = c
+        if ch and t <= beat['end'] + 0.2 and not big:
+            draw_caption(img, ch, t)
     return img
 
 # ------------------------------------------------------------------ music + sfx
 SR = 44100
-def music(total, beats_t):
+def _kick(L, f0=48, f1=120, dec=16):
+    x = np.arange(L) / SR
+    return np.sin(2 * np.pi * (f0 * x + f1 * 0.03 * (1 - np.exp(-x / 0.03)))) * np.exp(-x * dec)
+def _noise(L, seed=0): return np.random.default_rng(seed).uniform(-1, 1, L)
+def _add(buf, sig, t0, vol):
+    s0 = int(t0 * SR)
+    if s0 < 0 or s0 >= len(buf): return
+    e = min(len(buf), s0 + len(sig)); buf[s0:e] += sig[:e - s0] * vol
+
+def music(total):
     n = int(SR * total); buf = np.zeros(n, np.float32)
-    tt = np.arange(n) / SR
-    bpm = 100; beat = 60 / bpm
-    chords = [(220.0, 261.6, 329.6), (174.6, 220.0, 261.6), (196.0, 246.9, 293.7), (164.8, 207.7, 246.9)]
-    bar = beat * 4
-    for i in range(int(total / bar) + 1):
-        t0 = i * bar; c = chords[i % 4]
-        s0, s1 = int(t0 * SR), min(n, int((t0 + bar) * SR))
-        if s0 >= n: break
-        x = tt[s0:s1] - t0
-        envv = np.minimum(1, x / 0.3) * np.exp(-x * 0.4)
-        for f in c:
-            buf[s0:s1] += 0.05 * np.sin(2 * np.pi * f * x) * envv
-            buf[s0:s1] += 0.02 * np.sin(2 * np.pi * f * 2.003 * x) * envv
-        # bass
-        buf[s0:s1] += 0.08 * np.sin(2 * np.pi * c[0] / 2 * x) * np.exp(-x * 1.2)
-    for i in range(int(total / beat) + 1):           # soft pluck arp + kick/hat
-        t0 = i * beat; s0 = int(t0 * SR); L = int(0.25 * SR)
-        if s0 + L >= n: break
-        x = np.arange(L) / SR
-        c = chords[int(t0 / bar) % 4]
-        f = c[i % 3] * 2
-        buf[s0:s0 + L] += 0.035 * np.sin(2 * np.pi * f * x) * np.exp(-x * 14)
-        if i % 2 == 0:
-            buf[s0:s0 + L] += 0.12 * np.sin(2 * np.pi * (50 + 90 * np.exp(-x / 0.03)) * x) * np.exp(-x * 18)
-        h = int(t0 * SR + beat / 2 * SR); Lh = int(0.04 * SR)
-        if h + Lh < n: buf[h:h + Lh] += 0.02 * np.random.default_rng(i).uniform(-1, 1, Lh) * np.exp(-np.arange(Lh) / SR * 90)
-    for t0 in beats_t:                               # soft "pop" at each new card
-        s0 = int(t0 * SR); L = int(0.12 * SR)
-        if s0 + L < n:
-            x = np.arange(L) / SR
-            buf[s0:s0 + L] += 0.18 * np.sin(2 * np.pi * (500 + 2500 * x) * x) * np.exp(-x * 35)
+    bpm = 122; beat = 60 / bpm; bar = beat * 4
+    prog = [(220.0, 261.6, 329.6), (174.6, 220.0, 261.6), (261.6, 329.6, 392.0), (196.0, 246.9, 293.7)]
+    i = 0; t = 0.0
+    while t < total:
+        c = prog[int(t / bar) % 4]
+        _add(buf, _kick(int(0.3 * SR)), t, 0.55)                                  # four on the floor
+        if i % 4 in (1, 3):                                                       # clap
+            L = int(0.18 * SR); x = np.arange(L) / SR
+            _add(buf, _noise(L, i) * np.exp(-x * 22), t, 0.16)
+        for h in (0.0, 0.5):                                                      # hats
+            L = int(0.035 * SR); x = np.arange(L) / SR
+            hs = np.diff(_noise(L + 1, i * 3 + int(h * 2)))
+            _add(buf, hs * np.exp(-x * 120), t + h * beat + beat / 2 * (h == 0), 0.045)
+        L = int(beat * 0.45 * SR); x = np.arange(L) / SR                          # offbeat bass
+        bass = np.sign(np.sin(2 * np.pi * c[0] / 2 * x)) * 0.5 + np.sin(2 * np.pi * c[0] / 2 * x)
+        _add(buf, np.convolve(bass, np.ones(30) / 30, 'same') * np.exp(-x * 6), t + beat / 2, 0.11)
+        L = int(beat * 0.5 * SR); x = np.arange(L) / SR                           # pluck arp
+        f = c[(i * 2) % 3] * 2
+        _add(buf, (np.sin(2 * np.pi * f * x) + 0.4 * np.sin(2 * np.pi * f * 2 * x)) * np.exp(-x * 11), t, 0.05)
+        if i % 4 == 0:                                                            # pad
+            L = int(bar * SR); x = np.arange(L) / SR
+            pad = sum(np.sin(2 * np.pi * ff * x) + 0.5 * np.sin(2 * np.pi * ff * 1.004 * x) for ff in c)
+            _add(buf, pad * np.minimum(1, x / 0.2) * np.exp(-x * 0.5), t, 0.022)
+        i += 1; t += beat
     return buf
 
-def mix(outdir, total, beats_t):
+def sfx(total, T):
+    n = int(SR * total); buf = np.zeros(n, np.float32)
+    beats = T['beats']
+    for k, b in enumerate(beats):                     # whoosh on each new card
+        if k == 0: continue
+        L = int(0.3 * SR); x = np.arange(L) / SR
+        nz = _noise(L, k); env = np.sin(np.pi * x / x[-1]) ** 2
+        nz = np.convolve(nz, np.ones(6) / 6, 'same')
+        _add(buf, nz * env, b['start'] - 0.2, 0.28)
+    for k, te in enumerate(emph_times(T)):            # impact on emphasised words
+        L = int(0.45 * SR); x = np.arange(L) / SR
+        hit = _kick(L, 40, 140, 9) * 0.9 + _noise(L, 99 + k) * np.exp(-x * 40) * 0.35
+        _add(buf, hit, te, 0.5)
+    seen = set()
+    for b in beats:                                   # soft pop when a caption chunk appears
+        for c in chunks(b['words']):
+            t0 = round(c[0][1], 2)
+            if t0 in seen: continue
+            seen.add(t0)
+            L = int(0.06 * SR); x = np.arange(L) / SR
+            _add(buf, np.sin(2 * np.pi * (700 + 2200 * x) * x) * np.exp(-x * 60), t0, 0.07)
+    return buf
+
+def mix(outdir, total, T):
     import soundfile as sf
     v, sr = sf.read(os.path.join(outdir, 'voice.wav'))
     v = np.interp(np.arange(0, len(v), sr / SR), np.arange(len(v)), v)
-    m = music(total, beats_t)
+    m = music(total); fx = sfx(total, T)
     n = max(len(v), len(m)); out = np.zeros(n)
-    out[:len(m)] += m * 0.55
-    # duck music under the voice
-    out[:len(v)] = out[:len(v)] * (1 - 0.45 * (np.convolve(np.abs(v) > 0.02, np.ones(4410) / 4410, 'same')))
-    out[:len(v)] += v * 0.95
-    out = np.tanh(out * 1.05); out = out / (np.abs(out).max() + 1e-9) * 0.92
-    fade = int(SR * 0.8); out[-fade:] *= np.linspace(1, 0, fade)
+    out[:len(m)] += m * 0.5
+    duck = np.convolve(np.abs(v) > 0.02, np.ones(4410) / 4410, 'same')
+    out[:len(v)] = out[:len(v)] * (1 - 0.5 * duck)
+    out[:len(fx)] += fx
+    out[:len(v)] += v * 1.0
+    out = np.tanh(out * 1.1); out = out / (np.abs(out).max() + 1e-9) * 0.92
+    fade = int(SR * 0.6); out[-fade:] *= np.linspace(1, 0, fade)
     with wave.open(os.path.join(outdir, 'mix.wav'), 'wb') as wf:
         wf.setnchannels(1); wf.setsampwidth(2); wf.setframerate(SR)
         wf.writeframes((out * 32767).astype(np.int16).tobytes())
@@ -532,7 +629,7 @@ if __name__ == '__main__':
         jobs = [(ep, i, min(nf, i + step), os.path.join(outdir, f'_part{k}.mp4')) for k, i in enumerate(range(0, nf, step))]
         for k in L3.POSES: L3.make(k)
         with Pool(nproc) as pool: parts = pool.map(_render_range, jobs)
-        mix(outdir, total, [b['start'] for b in T['beats']])
+        mix(outdir, total, T)
         with open(os.path.join(outdir, 'parts.txt'), 'w') as f:
             for pth in parts: f.write(f"file '{os.path.abspath(pth)}'\n")
         final = os.path.join(outdir, f'{ep}.mp4')

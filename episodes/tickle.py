@@ -1,10 +1,9 @@
-# Episode: Why can't you tickle yourself?
-# Each beat: (visual, text). Visual keys are drawn by explainer.py (see VISUALS there).
-# Sources: Blakemore, Wolpert & Frith 1998 (Nature Neurosci.), 1999 (J Cogn Neurosci), 2000 (NeuroReport);
-#          Panksepp 2003 (rat 50 kHz calls); Ishiyama & Brecht 2016 (Science, HU Berlin).
+# Episode: Why can't you tickle yourself?   (v2 – fast format)
+# Each beat: (visual, arms, text). *word* = emphasis (pink caption, camera punch, impact sound).
+# A visual 'BIG:LINE|LINE' stamps giant text instead of a card (use it for the hook).
 TITLE = "Why can't you tickle yourself?"
 SLUG = 'tickle'
-CAPTION = ("Why can't you tickle yourself? 🤔 Your brain is spoiling the surprise. "
+CAPTION = ("Try it right now: you can't tickle yourself 😳 Your brain is a spoiler. "
            "#science #brain #didyouknow #learnontiktok #tickle #facts")
 SOURCES = [
     'https://pubmed.ncbi.nlm.nih.gov/10943682/',
@@ -13,23 +12,25 @@ SOURCES = [
     'https://pubmed.ncbi.nlm.nih.gov/12954448/',
 ]
 BEATS = [
-    ('hook',      'down',  "Try to tickle yourself. Right now. Go on."),
-    ('hook2',     'shrug', "Nothing, right? Not even a little giggle."),
-    ('intro',     'point', "I'm Doctor Lumen, and today we're solving one of the weirdest mysteries of your body."),
-    ('title',     'up',    "Why can't you tickle yourself?"),
-    ('copy',      'point', "Every time you move, your brain secretly sends a copy of that command to a region at the back of your head, called the cerebellum."),
-    ('predict',   'down',  "The cerebellum uses that copy to predict exactly what you are about to feel."),
-    ('volume',    'point', "And when the touch arrives right on schedule, your brain simply turns the volume down."),
-    ('scan',      'down',  "Scientists in London scanned people's brains while a machine tickled them, and while they tickled themselves."),
-    ('scan2',     'point', "During the self tickle, the brain areas for touch and pleasure lit up much less."),
-    ('surprise',  'shrug', "So tickling only really works when it's a surprise. That's also why you can start giggling before someone even touches you."),
-    ('robot',     'point', "But here's the crazy part. The same team built a tickle robot."),
-    ('robot2',    'down',  "You move one handle, and a second robot arm tickles your palm."),
-    ('delay',     'point', "With no delay, it barely tickles. But add a delay of just a fifth of a second, and suddenly it feels a lot more ticklish."),
-    ('delay2',    'down',  "Your brain's prediction is off, so it treats the touch like it came from someone else."),
-    ('rats',      'up',    "And we're not the only ones. Rats laugh when you tickle them!"),
-    ('rats2',     'point', "They squeak at around fifty kilohertz. Way too high for human ears."),
-    ('rats3',     'down',  "Researchers in Berlin found they're most ticklish on the belly and under their feet."),
-    ('outro',     'shrug', "So if someone tells you they're not ticklish, maybe their brain is just really good at predicting."),
+    ('BIG:TICKLE|YOURSELF.|RIGHT NOW.|GO!', 'point', "Tickle yourself. Right now. Under your arm. Go!"),
+    ('hook2',     'shrug', "Nothing? Yeah. *Almost* nobody on Earth can do it."),
+    ('robot',     'point', "But scientists built a *robot* that tickles you with your own hand. Stay till the end."),
+    ('intro',     'up',    "I'm Doctor Lumen. Let's crack this."),
+    ('spoiler',   'point', "Here's the secret: your brain is a *spoiler*."),
+    ('copy',      'down',  "Every time you move, it sends a secret *copy* of the command to the back of your head."),
+    ('copy',      'point', "This little guy. The *cerebellum*."),
+    ('predict',   'down',  "It uses that copy to predict *exactly* what you're about to feel."),
+    ('volume',    'point', "Touch arrives right on schedule? Your brain hits *mute*."),
+    ('scan',      'down',  "Scientists in London actually watched this happen in brain scanners."),
+    ('scan2',     'point', "Tickled by a machine: the brain *lights up*. Tickling yourself? Way less."),
+    ('surprise',  'shrug', "So tickling only works as a *surprise*. That's why you giggle before someone even touches you!"),
+    ('robot2',    'point', "Now, the robot. You move a handle, and a robot arm tickles your *other* hand."),
+    ('delay',     'down',  "No delay? Barely anything. But add a delay of just a *fifth* of a second..."),
+    ('delay2',    'up',    "and suddenly it *tickles*!"),
+    ('delay2',    'point', "Your brain's prediction is off, so it thinks someone *else* is touching you."),
+    ('rats',      'up',    "And the weirdest part? *Rats* laugh when you tickle them!"),
+    ('rats2',     'point', "They chirp at around *fifty* kilohertz. Way too high for human ears."),
+    ('rats3',     'down',  "And just like you, they're most ticklish on the *belly* and the *feet*."),
+    ('outro',     'shrug', "So if someone says they're not ticklish... their brain is just a *really* good spoiler."),
     ('follow',    'up',    "Follow for a new everyday mystery, every single day!"),
 ]

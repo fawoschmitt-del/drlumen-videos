@@ -16,14 +16,24 @@ established science outlets). Every fact in the script must be backed by a sourc
 "wow" facts (a number, an experiment, an animal). If something is disputed, say so or leave it out.
 
 ## 3. Write the episode: `episodes/<slug>.py`
-Copy the structure of `episodes/tickle.py`:
-- `TITLE`, `SLUG`, `CAPTION` (one punchy sentence + 5–6 hashtags, include #science #didyouknow #learnontiktok),
-  `SOURCES` (list of URLs), `BEATS`.
-- `BEATS` = list of `(visual_key, arms, text)`. arms: `down`, `point`, `shrug`, `up`.
-  Pattern: 2 hook beats (talk to the viewer, create curiosity) → `('intro', 'point', "I'm Doctor Lumen, and today ...")`
-  → title beat (the question) → 10–14 explanation beats, each one short sentence or two → a twist/"crazy part"
-  → a short wrap-up → `('follow', 'up', "Follow for a new everyday mystery, every single day!")`.
-- 230–300 words total. Write numbers as words the way they should be spoken ("a fifth of a second").
+Copy the structure of `episodes/tickle.py` (the reference for style and pacing).
+- `TITLE`, `SLUG`, `CAPTION` (punchy first line that teases the surprise + 5–6 hashtags, include #science #didyouknow
+  #learnontiktok), `SOURCES` (list of URLs), `BEATS` = list of `(visual_key, arms, text)`; arms: down / point / shrug / up.
+
+### THE VIDEO MUST NOT BE BORING – rules
+1. **Hook (beat 1, first 2–3 s):** a situation everyone knows OR something the viewer should try right now, said
+   directly to them ("Look at your fingertips after a long bath.", "Hold your breath. Now try to..."). Use the visual
+   `BIG:LINE|LINE|LINE` (giant stamped words, 2–4 short lines, each line starting with a word that is spoken).
+2. **Beat 2:** the surprising result / the weird fact ("Nothing? Almost nobody on Earth can do it.").
+3. **Beat 3 – open loop:** tease the craziest fact of the video and promise it ("...but there's a robot that... Stay till the end.").
+4. Intro is ONE short line: `('intro', 'up', "I'm Doctor Lumen. Let's crack this.")`. No long title beat.
+5. Short punchy sentences (max ~15 words per beat), talk to "you", no lecture tone, no filler ("today we will learn").
+   Every 2–3 beats something new happens: a number, an experiment, an animal, a twist ("But here's the crazy part...").
+6. Mark 1 key word per beat with `*asterisks*` – it gets a pink caption, camera punch and an impact sound.
+   Not more than one per beat, otherwise it loses its effect.
+7. Pay off the open loop near the end, then a one-line callback joke, then
+   `('follow', 'up', "Follow for a new everyday mystery, every single day!")`.
+8. 230–290 words → 65–85 s with the fast voice. Write numbers as spoken words ("a fifth of a second").
 - Visuals: the keys `intro` and `follow` exist already. For the others, write 6–10 small illustration functions
   in the episode file and export them:
 
@@ -45,7 +55,8 @@ Look at the preview with the Read tool. Fix anything clipped, overlapping, unrea
 
 ## 5. Render
     python explainer.py <slug>              # -> out/<slug>/<slug>.mp4
-Check with ffprobe: duration >= 65 s, 1080x1920, has audio. Look at 3 stills (ffmpeg -ss).
+Check with ffprobe: duration >= 65 s, 1080x1920, has audio. Look at stills of the first 3 seconds and 3 later moments
+(ffmpeg -ss). The first frame must already show big text – no empty start.
 
 ## 6. Publish the file
     python publish.py out/<slug>/<slug>.mp4 drlumen_<slug>.mp4
