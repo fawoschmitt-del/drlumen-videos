@@ -1,0 +1,5 @@
+out/
+models/
+__pycache__/
+_render2d_ref.py
+_base3d.py
