@@ -4,10 +4,10 @@
 | Date | Episode file | Question |
 |---|---|---|
 | 2026-11-26 | tickle | Why can't you tickle yourself? |
+| 2026-11-27 | fingers | Why do your fingers wrinkle in water? |
 
 ## Backlog (pick the most surprising one; add new ideas any time)
 - Why do onions make you cry?
-- Why do your fingers wrinkle in water?
 - Why is yawning contagious?
 - Why do we get brain freeze?
 - Why does time feel faster as you get older?

@@ -18,6 +18,7 @@ Neues Projekt, ersetzt die Serie Kitchen Chaos (abgebrochen). Die alten Dateien 
 | Datei | Thema | Länge |
 |---|---|---|
 | episodes/tickle.py | Why can't you tickle yourself? | 91 s |
+| episodes/fingers.py | Why do your fingers wrinkle in water? | 74 s |
 
 ## Dateien
 - `lumen3d.py` – Figur (SDF-Raymarching, numpy + PIL). `python lumen3d.py` rendert alle Posen nach cache/ (dauert ca. 10 Min.)
