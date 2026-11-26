@@ -61,7 +61,8 @@ It prints the public URL (raw.githubusercontent.com/.../media/videos/...).
 - YouTube: text = CAPTION (+ a line "Sources:" with the URLs), assets = [{video: {url}}],
   metadata.youtube = {type: "short", title: TITLE + " #shorts" (max 100 chars), categoryId: "27", isAiGenerated: true,
   madeForKids: false, privacy: "public"}
-- Don't create a second post if one for this episode already exists (list_posts first).
+- Don't create a second post if one for this episode already exists (list_posts first). If a post is already
+  scheduled at that 01:00 slot on a channel, use the following day's 01:00 instead (one video per day).
 
 ## 8. Save
 Add the episode to the "Done" table in `topics.md` (remove it from the backlog), then
