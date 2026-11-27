@@ -5,7 +5,7 @@ from shapes import *
 
 TITLE = "Why do flamingos stand on one leg?"
 SLUG = 'flamingo'
-CAPTION = ("Flamingos SLEEP on one leg and wobble less than you do awake 🦩 Here's the trick. "
+CAPTION = ("Flamingos SLEEP on one leg and wobble LESS when they doze 🦩 Here's the trick. "
            "#science #didyouknow #learnontiktok #flamingo #animals #facts")
 SOURCES = [
     'https://pmc.ncbi.nlm.nih.gov/articles/PMC5454233/',

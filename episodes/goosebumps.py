@@ -5,7 +5,7 @@ from shapes import *
 
 TITLE = "Why do we get goosebumps?"
 SLUG = 'goosebumps'
-CAPTION = ("Goosebumps have a secret second job, and Harvard just found it 🥶 "
+CAPTION = ("Goosebumps have a secret second job, and Harvard scientists found it 🥶 "
            "#science #didyouknow #learnontiktok #goosebumps #body #facts")
 SOURCES = [
     'https://www.nih.gov/news-events/nih-research-matters/what-goosebumps-are',

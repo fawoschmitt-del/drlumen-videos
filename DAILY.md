@@ -76,6 +76,10 @@ It prints the public URL (raw.githubusercontent.com/.../media/videos/...).
   madeForKids: false, privacy: "public"}
 - Don't create a second post if one for this episode already exists (list_posts first). If a post is already
   scheduled at that 01:00 slot on a channel, use the following day's 01:00 instead (one video per day).
+- **Backlog check first (before step 1!):** list_posts with status scheduled. The Buffer free plan allows max. 10 scheduled
+  posts per channel. If a channel already has 10 or more scheduled posts, do NOT make a video today: just report
+  "Vorrat voll (N Folgen geplant bis <letztes Datum>)" and stop. Otherwise schedule the new video on the 01:00 slot of the
+  day AFTER the last scheduled post (so the queue stays one video per day without gaps or doubles).
 
 ## 8. Save
 Add the episode to the "Done" table in `topics.md` (remove it from the backlog), then
