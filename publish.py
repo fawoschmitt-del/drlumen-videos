@@ -1,11 +1,11 @@
 """Put a finished video on the `media` branch of this repo and print its public download URL.
-The media branch is rewritten as a single commit each time and keeps only the newest KEEP videos,
+The media branch is rewritten as a single commit each time and keeps only the newest KEEP videos (14: enough for a 10-day backlog),
 so the repo doesn't grow forever (Buffer downloads the file when the post goes out, so keep a few days).
     python publish.py out/tickle/tickle.mp4 [name.mp4]
 """
 import os, sys, subprocess, shutil, tempfile, re, glob
 
-KEEP = 7
+KEEP = 14
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 def git(*a, cwd=HERE, check=True):

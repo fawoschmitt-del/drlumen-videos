@@ -45,6 +45,8 @@ Copy the structure of `episodes/tickle.py` (the reference for style and pacing).
           return im
       VISUALS = {'onion': v_onion, ...}
 
+  Shared drawing helpers (head, dog, cat, thermo, bars, badge, title, sub, cross, check ...) live in `episodes/shapes.py`
+  (`from shapes import *`). The slug must not clash with a module name (voice, explainer, publish, lumen3d, shapes).
   Helpers in explainer.py: new_card, label, arrow, brain, feather, meter, rat, waves, robot_arm, palm, stopwatch,
   colours INK/YEL/PINK/CYAN/GRN, fonts FA (Anton) / FI (Inter Black) / FB (Inter Bold). Use simple bold flat shapes,
   a big headline on each card, little animation via `lt`. Unknown keys fall back to a keyword card – avoid relying on that.
