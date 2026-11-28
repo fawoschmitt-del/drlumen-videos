@@ -15,6 +15,7 @@
 | 2026-12-05 | hiccups | Why do we get hiccups? |
 | 2026-12-06 | goosebumps | Why do we get goosebumps? |
 | 2026-12-07 | onions | Why do onions make you cry? |
+| 2026-12-08 | mosquito | Why do mosquitoes bite some people more than others? |
 
 ## Backlog (pick the most surprising one; add new ideas any time)
 - Why does time feel faster as you get older?
@@ -22,7 +23,6 @@
 - Why does spicy food feel hot?
 - Why does your stomach growl?
 - Why do cats purr?
-- Why do mosquitoes bite some people more than others?
 - Why do your ears pop on a plane?
 - Why does ice float?
 - Why do we have fingerprints?
